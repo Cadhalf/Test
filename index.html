@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .chat-container {
+            background: white;
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 500px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid rgba(135, 206, 235, 0.3);
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #87ceeb 0%, #4682b4 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.1em;
+            letter-spacing: 0.5px;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #fafafa;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.4;
+            animation: slideIn 0.3s ease-out;
+            word-wrap: break-word;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-message {
+            background: linear-gradient(135deg, #87ceeb 0%, #4682b4 100%);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .ai-message {
+            background: #e0e0e0;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .input-container {
+            display: flex;
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            gap: 10px;
+        }
+
+        .message-input {
+            flex-grow: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            outline: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .message-input:focus {
+            border-color: #87ceeb;
+            box-shadow: 0 0 0 3px rgba(135, 206, 235, 0.2);
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #87ceeb 0%, #4682b4 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            min-width: 60px;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(135, 206, 235, 0.4);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            background: #e0e0e0;
+            color: #666;
+            padding: 12px 16px;
+            border-radius: 18px;
+            border-bottom-left-radius: 4px;
+            font-size: 14px;
+        }
+
+        .typing-indicator::after {
+            content: '...';
+            animation: typing 1.5s infinite;
+        }
+
+        @keyframes typing {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        @media (max-width: 600px) {
+            .chat-container {
+                height: 100vh;
+                max-width: 100%;
+                border-radius: 0;
+            }
+            
+            body {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            AI Assistant
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="message ai-message">
+                Hello! I'm your AI assistant. How can I help you today?
+            </div>
+        </div>
+        <div class="typing-indicator" id="typing-indicator">AI is thinking</div>
+        <div class="input-container">
+            <input type="text" class="message-input" id="message-input" placeholder="Type your message...">
+            <button class="send-btn" id="send-btn">Send</button>
+        </div>
+    </div>
+
+    <script>
+        class EnhancedAI {
+            constructor() {
+                this.responses = {
+                    "hi": "Hello! How can I assist you today?",
+                    "hello": "Hi there! What would you like to talk about?",
+                    "how are you": "I'm doing great, thanks for asking! How about you?",
+                    "help": "I'm here to help! Ask me anything you'd like.",
+                    "what can you do": "I can chat with you about various topics, answer questions, and help with simple tasks!",
+                    "weather": "I can't check current weather, but I can tell you that every day's a great day for a conversation!",
+                    "joke": "Why don't scientists trust atoms? Because they make up everything!",
+                    "": "Could you please say something?",
+                    "bye": "Goodbye! It was nice chatting with you!",
+                    "thank you": "You're very welcome! Is there anything else I can help you with?",
+                    "thanks": "You're welcome! Happy to help!"
+                };
+            }
+
+            generateResponse(message) {
+                const lowercaseMsg = message.toLowerCase().trim();
+
+                // Check for exact matches first
+                for (let key in this.responses) {
+                    if (lowercaseMsg.includes(key)) {
+                        return this.responses[key];
+                    }
+                }
+
+                // More sophisticated responses based on keywords
+                if (lowercaseMsg.includes('name')) {
+                    return "I'm an AI assistant. I don't have a name, but you can call me whatever you like!";
+                } else if (lowercaseMsg.includes('old') || lowercaseMsg.includes('age')) {
+                    return "I don't have an age in the traditional sense, but I'm always learning and growing!";
+                } else if (lowercaseMsg.includes('time')) {
+                    const now = new Date();
+                    return `It's ${now.toLocaleTimeString()} right now. Time flies when we're having fun!`;
+                } else if (lowercaseMsg.includes('date')) {
+                    const today = new Date();
+                    return `Today is ${today.toLocaleDateString()}. What a great day to chat!`;
+                }
+
+                // Default responses for unrecognized messages
+                const defaultResponses = [
+                    "That's interesting! Tell me more.",
+                    "I see. Could you elaborate on that?",
+                    "I'm not quite sure I understand. Could you rephrase?",
+                    "That's a great question! What do you think about it?",
+                    "I'm still learning. Could you help me understand better?",
+                    "Interesting perspective! What else would you like to discuss?"
+                ];
+
+                return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+            }
+        }
+
+        class ChatInterface {
+            constructor() {
+                this.ai = new EnhancedAI();
+                this.chatMessages = document.getElementById('chat-messages');
+                this.messageInput = document.getElementById('message-input');
+                this.sendBtn = document.getElementById('send-btn');
+                this.typingIndicator = document.getElementById('typing-indicator');
+
+                this.setupEventListeners();
+                this.messageInput.focus();
+            }
+
+            setupEventListeners() {
+                this.sendBtn.addEventListener('click', () => this.sendMessage());
+                this.messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.sendMessage();
+                });
+            }
+
+            async sendMessage() {
+                const message = this.messageInput.value.trim();
+                if (!message) return;
+
+                // Add user message
+                this.addMessage(message, 'user');
+                
+                // Clear input and disable send button temporarily
+                this.messageInput.value = '';
+                this.sendBtn.disabled = true;
+                
+                // Show typing indicator
+                this.showTypingIndicator();
+
+                // Generate AI response with realistic delay
+                setTimeout(() => {
+                    const aiResponse = this.ai.generateResponse(message);
+                    this.hideTypingIndicator();
+                    this.addMessage(aiResponse, 'ai');
+                    this.sendBtn.disabled = false;
+                    this.messageInput.focus();
+                }, 1000 + Math.random() * 1000); // 1-2 second delay
+            }
+
+            addMessage(text, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message', `${sender}-message`);
+                messageDiv.textContent = text;
+                this.chatMessages.appendChild(messageDiv);
+                
+                // Auto-scroll to bottom
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+
+            showTypingIndicator() {
+                this.typingIndicator.style.display = 'block';
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+
+            hideTypingIndicator() {
+                this.typingIndicator.style.display = 'none';
+            }
+        }
+
+        // Initialize chat interface when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new ChatInterface();
+        });
+    </script>
+</body>
+</html>
